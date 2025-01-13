@@ -13,7 +13,12 @@ class PatientSerializer(serializers.ModelSerializer):
     user = UserSerializer()
     class Meta:
         model = Patient
-        fields = '__all__'
+        fields = ["id","name","user"]
+
+class CreatePatienSerialzier(serializers.ModelSerializer):
+    class Meta:
+        model = Patient
+        fields = "__all__" 
 
 class DoctorSerialzier(serializers.ModelSerializer):
     user = UserSerializer()
