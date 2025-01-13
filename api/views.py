@@ -2,10 +2,11 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.authentication import BasicAuthentication
 from rest_framework.permissions import IsAuthenticatedOrReadOnly,IsAuthenticated
-from .models import Doctor,Patient
-from .serializers import DoctorSerialzier,PatientSerializer,CreatePatienSerialzier
-
-
+from .models import Doctor,Patient ,PatientHistory
+from .serializers import DoctorSerialzier,PatientSerializer,CreatePatienSerialzier,PatientHistorySerializer
+from .mixins.patient_exisits_mixins import PatientExistsMixins
+from .dto.create_patient_dto import CreatePatientDto
+from .dto.create_patient_history_dto import CreatePatientHistoryDto
 class DoctorCrudView(APIView):
     authentication_classes = [BasicAuthentication]
     permission_classes = [IsAuthenticatedOrReadOnly]
@@ -41,8 +42,10 @@ class PatientCrudView(APIView):
 
     def post(self,request):
         body = request.data
-
-        serialzier = CreatePatienSerialzier(data={**body,'primary_doctor':body['doctor'],'user':request.user.id})
+        dto = CreatePatientDto(data=body)
+        if not dto.is_valid():
+            return Response(data={'message':dto.errors})
+        serialzier = CreatePatienSerialzier(data={'name':dto.validated_data['name'],'primary_doctor':dto.validated_data['doctor'],'user':request.user.id})
 
         if serialzier.is_valid():
             serialzier.save()
@@ -67,3 +70,22 @@ class PatientCrudView(APIView):
         patient.delete()
         return Response(data={'message':'Patient deleted successfully'})
     
+
+
+class PatientHistoryCrudView(APIView,PatientExistsMixins):
+    def get(self,request,id):
+        self.check_patient_exists(id)
+        history = PatientHistory.objects.filter(patient=id)
+        data = PatientHistorySerializer(history,many=True).data
+        return Response(data={'data':data})
+    
+    def post(self,request,id):
+        self.check_patient_exists(id)
+        body = CreatePatientHistoryDto(data=request.data)
+        if not body.is_valid():
+            return Response(data={'message':body.errors})
+        history = PatientHistorySerializer(data={'patient':id,'description':body.validated_data['description']})
+        if not history.is_valid():
+            return Response(data={'message':history.errors})
+        history.save()
+        return Response(data={'message':'History created successfully'})
