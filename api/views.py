@@ -7,6 +7,9 @@ from .serializers import DoctorSerialzier,PatientSerializer,CreatePatienSerialzi
 from .mixins.patient_exisits_mixins import PatientExistsMixins
 from .dto.create_patient_dto import CreatePatientDto
 from .dto.create_patient_history_dto import CreatePatientHistoryDto
+from .dto.update_patient_history_dto import UpdatePatientHistoryDto
+from .dto.delete_patient_history_dto import DeletePatientHistoryDto
+
 class DoctorCrudView(APIView):
     authentication_classes = [BasicAuthentication]
     permission_classes = [IsAuthenticatedOrReadOnly]
@@ -24,8 +27,6 @@ class DoctorCrudView(APIView):
         else:
             return Response(data={'message':serializer.errors})
         
-
-
 
 
 class PatientCrudView(APIView):
@@ -73,6 +74,7 @@ class PatientCrudView(APIView):
 
 
 class PatientHistoryCrudView(APIView,PatientExistsMixins):
+
     def get(self,request,id):
         self.check_patient_exists(id)
         history = PatientHistory.objects.filter(patient=id)
@@ -89,3 +91,24 @@ class PatientHistoryCrudView(APIView,PatientExistsMixins):
             return Response(data={'message':history.errors})
         history.save()
         return Response(data={'message':'History created successfully'})
+    
+    def patch(self,request,id):
+        self.check_patient_exists(id)
+        body = UpdatePatientHistoryDto(data=request.data)
+        if not body.is_valid():
+            return Response(data={'message':body.errors})
+        history = PatientHistory.objects.update(**body.validated_data)
+        return Response(data={'message':'History updated successfully'})
+    
+    def delete(self,request,id):
+        self.check_patient_exists(id)
+        body = DeletePatientHistoryDto(data=request.data)
+
+        if not body.is_valid():
+            return Response(data={'message':body.errors})
+
+        res = PatientHistory.objects.get(**body.validated_data)
+        res.delete()
+        return Response(data={'message':'History deleted successfully'})        
+        
+
