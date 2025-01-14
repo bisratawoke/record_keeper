@@ -11,6 +11,8 @@ from .dto.create_patient_history_dto import CreatePatientHistoryDto
 from .dto.update_patient_history_dto import UpdatePatientHistoryDto
 from .dto.delete_patient_history_dto import DeletePatientHistoryDto
 from .dto.create_hospital_dto import CreateHospitalDto
+from.permissions.permission_hospital import HospitalPermission
+from rest_framework.exceptions import PermissionDenied
 
 class DoctorCrudView(APIView):
     authentication_classes = [BasicAuthentication]
@@ -117,7 +119,8 @@ class PatientHistoryCrudView(APIView,PatientExistsMixins):
 
 
 class HospitalCrudView(APIView,RecordExisitsMixin):
-
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated & HospitalPermission]
     def get(self,request):
         hospitals = Hospital.objects.all()
         data = HospitalSerializer(hospitals,many=True).data
@@ -140,6 +143,11 @@ class HospitalCrudView(APIView,RecordExisitsMixin):
         self.check_if_record_exisits(Hospital,request.data['id'])
         body = request.data
         hospital = Hospital.objects.get(id=body['id'])
+        try:
+            self.check_object_permissions(request=request,obj=hospital)
+        except PermissionDenied:
+            return Response(data={'message':'Permission denined'})
+   
         serializer = HospitalSerializer(hospital,data=body,partial=True)
         if serializer.is_valid():
             serializer.save()
