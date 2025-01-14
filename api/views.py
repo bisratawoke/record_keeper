@@ -5,6 +5,7 @@ from rest_framework.permissions import IsAuthenticatedOrReadOnly,IsAuthenticated
 from .models import Doctor,Patient ,PatientHistory,Hospital
 from .serializers import DoctorSerialzier,PatientSerializer,CreatePatienSerialzier,PatientHistorySerializer,HospitalSerializer
 from .mixins.patient_exisits_mixins import PatientExistsMixins
+from .mixins.record_exisits_mixins import RecordExisitsMixin
 from .dto.create_patient_dto import CreatePatientDto
 from .dto.create_patient_history_dto import CreatePatientHistoryDto
 from .dto.update_patient_history_dto import UpdatePatientHistoryDto
@@ -115,7 +116,7 @@ class PatientHistoryCrudView(APIView,PatientExistsMixins):
 
 
 
-class HospitalCrudView(APIView):
+class HospitalCrudView(APIView,RecordExisitsMixin):
 
     def get(self,request):
         hospitals = Hospital.objects.all()
@@ -134,3 +135,21 @@ class HospitalCrudView(APIView):
         return Response({
             'message':'Hospital created successfully'
         })
+    
+    def patch(self,request):
+        self.check_if_record_exisits(Hospital,request.data['id'])
+        body = request.data
+        hospital = Hospital.objects.get(id=body['id'])
+        serializer = HospitalSerializer(hospital,data=body,partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(data={'message':'Hospital updated successfully'})
+        return Response(data={'message':serializer.errors})
+
+    
+    def delete(self,request):
+        self.check_if_record_exisits(Hospital,request.data['id'])
+        body = request.data
+        hospital = Hospital.objects.get(id=body['id'])
+        hospital.delete()
+        return Response(data={'message':'Hospital deleted successfully'})
