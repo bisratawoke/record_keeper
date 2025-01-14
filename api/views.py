@@ -2,13 +2,14 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.authentication import BasicAuthentication
 from rest_framework.permissions import IsAuthenticatedOrReadOnly,IsAuthenticated
-from .models import Doctor,Patient ,PatientHistory
-from .serializers import DoctorSerialzier,PatientSerializer,CreatePatienSerialzier,PatientHistorySerializer
+from .models import Doctor,Patient ,PatientHistory,Hospital
+from .serializers import DoctorSerialzier,PatientSerializer,CreatePatienSerialzier,PatientHistorySerializer,HospitalSerializer
 from .mixins.patient_exisits_mixins import PatientExistsMixins
 from .dto.create_patient_dto import CreatePatientDto
 from .dto.create_patient_history_dto import CreatePatientHistoryDto
 from .dto.update_patient_history_dto import UpdatePatientHistoryDto
 from .dto.delete_patient_history_dto import DeletePatientHistoryDto
+from .dto.create_hospital_dto import CreateHospitalDto
 
 class DoctorCrudView(APIView):
     authentication_classes = [BasicAuthentication]
@@ -112,3 +113,24 @@ class PatientHistoryCrudView(APIView,PatientExistsMixins):
         return Response(data={'message':'History deleted successfully'})        
         
 
+
+
+class HospitalCrudView(APIView):
+
+    def get(self,request):
+        hospitals = Hospital.objects.all()
+        data = HospitalSerializer(hospitals,many=True).data
+        return Response(data={'data':data})
+        
+
+    def post(self,request):
+        body = CreateHospitalDto(data=request.data)
+        if not body.is_valid():
+            return Response(status=400,data={'message': body.errors})
+        hospital = HospitalSerializer(data=body.validated_data)
+        if not hospital.is_valid():
+            return Response(status=400,data={'message':hospital.errors})
+        hospital.save()
+        return Response({
+            'message':'Hospital created successfully'
+        })
