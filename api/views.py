@@ -117,10 +117,10 @@ class PatientHistoryCrudView(APIView,PatientExistsMixins):
         
 
 
-
 class HospitalCrudView(APIView,RecordExisitsMixin):
     authentication_classes = [BasicAuthentication]
     permission_classes = [IsAuthenticated & HospitalPermission]
+
     def get(self,request):
         hospitals = Hospital.objects.all()
         data = HospitalSerializer(hospitals,many=True).data
@@ -159,5 +159,9 @@ class HospitalCrudView(APIView,RecordExisitsMixin):
         self.check_if_record_exisits(Hospital,request.data['id'])
         body = request.data
         hospital = Hospital.objects.get(id=body['id'])
+        try:
+            self.check_object_permissions(request=request,obj=hospital)
+        except PermissionDenied:
+            return Response(status=401,data={'message':'Unauthorized'})
         hospital.delete()
         return Response(data={'message':'Hospital deleted successfully'})
