@@ -2,8 +2,22 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.authentication import BasicAuthentication
 from rest_framework.permissions import IsAuthenticatedOrReadOnly,IsAuthenticated
-from .models import Doctor,Patient ,PatientHistory,Hospital
-from .serializers import DoctorSerialzier,PatientSerializer,CreatePatienSerialzier,PatientHistorySerializer,HospitalSerializer
+from rest_framework.exceptions import PermissionDenied
+from .models import (
+    Doctor,
+    Patient ,
+    PatientHistory,
+    Hospital,
+    Asset
+)
+from .serializers import (
+    DoctorSerialzier,
+    PatientSerializer,
+    CreatePatienSerialzier,
+    PatientHistorySerializer,
+    HospitalSerializer,
+    AssetSerializer
+)
 from .mixins.patient_exisits_mixins import PatientExistsMixins
 from .mixins.record_exisits_mixins import RecordExisitsMixin
 from .dto.create_patient_dto import CreatePatientDto
@@ -11,8 +25,9 @@ from .dto.create_patient_history_dto import CreatePatientHistoryDto
 from .dto.update_patient_history_dto import UpdatePatientHistoryDto
 from .dto.delete_patient_history_dto import DeletePatientHistoryDto
 from .dto.create_hospital_dto import CreateHospitalDto
-from.permissions.permission_hospital import HospitalPermission
-from rest_framework.exceptions import PermissionDenied
+from .permissions.permission_hospital import HospitalPermission
+from .permissions.permission_hospital_v2 import PermissionHospitalV2
+
 
 class DoctorCrudView(APIView):
     authentication_classes = [BasicAuthentication]
@@ -118,6 +133,8 @@ class PatientHistoryCrudView(APIView,PatientExistsMixins):
 
 
 class HospitalCrudView(APIView,RecordExisitsMixin):
+
+
     authentication_classes = [BasicAuthentication]
     permission_classes = [IsAuthenticated & HospitalPermission]
 
@@ -165,3 +182,18 @@ class HospitalCrudView(APIView,RecordExisitsMixin):
             return Response(status=401,data={'message':'Unauthorized'})
         hospital.delete()
         return Response(data={'message':'Hospital deleted successfully'})
+
+
+
+class AssetCategoryCrudView(APIView):
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated|PermissionHospitalV2]
+    def get(self,request,id):
+        try:
+            self.check_object_permissions()
+        except PermissionDenied:
+            return Response({'message': 'Authentication error'})
+        
+
+    def post(self,request):
+        pass
