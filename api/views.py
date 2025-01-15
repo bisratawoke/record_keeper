@@ -187,13 +187,23 @@ class HospitalCrudView(APIView,RecordExisitsMixin):
 
 class AssetCategoryCrudView(APIView):
     authentication_classes = [BasicAuthentication]
-    permission_classes = [IsAuthenticated|PermissionHospitalV2]
-    def get(self,request,id):
+    permission_classes = [PermissionHospitalV2]  
+    
+    def check_permission(self,request,handler):
         try:
-            self.check_object_permissions()
+            self.check_object_permissions(request,{})
         except PermissionDenied:
             return Response({'message': 'Authentication error'})
+
+    def get(self,request,id):
+
+        def handler():
+            return Response({'message': 'succes'})
+        return self.check_permission(request,handler)
         
 
-    def post(self,request):
-        pass
+    def post(self,request,id):
+        def handler():
+            return Response({'message': 'succes'})
+        
+        return self.check_permission(request,handler)
