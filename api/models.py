@@ -37,7 +37,7 @@ class Hospital(models.Model):
 
 class AssetCategory(ModelWithTimeStamp):
     name = models.CharField(max_length=200)
-    hospital = models.ForeignKey(Hospital,on_delete=models.CASCADE)
+    hospital = models.ForeignKey(Hospital,on_delete=models.CASCADE,related_name="asset_category")
     
 class Asset(models.Model):
     name = models.CharField(max_length=100)

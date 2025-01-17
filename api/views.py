@@ -16,17 +16,23 @@ from .serializers import (
     CreatePatienSerialzier,
     PatientHistorySerializer,
     HospitalSerializer,
-    AssetSerializer
+    AssetSerializer,
+    AssetCategorySerializer
 )
 from .mixins.patient_exisits_mixins import PatientExistsMixins
 from .mixins.record_exisits_mixins import RecordExisitsMixin
+from .mixins.record_extractor_mixins import RecordExtractor
+
 from .dto.create_patient_dto import CreatePatientDto
 from .dto.create_patient_history_dto import CreatePatientHistoryDto
 from .dto.update_patient_history_dto import UpdatePatientHistoryDto
 from .dto.delete_patient_history_dto import DeletePatientHistoryDto
 from .dto.create_hospital_dto import CreateHospitalDto
+from .dto.create_asset_category import CreateAssetCategoryDto
+
 from .permissions.permission_hospital import HospitalPermission
 from .permissions.permission_hospital_v2 import PermissionHospitalV2
+from rest_framework.exceptions import NotFound
 
 
 class DoctorCrudView(APIView):
@@ -148,7 +154,7 @@ class HospitalCrudView(APIView,RecordExisitsMixin):
         body = CreateHospitalDto(data=request.data)
         if not body.is_valid():
             return Response(status=400,data={'message': body.errors})
-        hospital = HospitalSerializer(data=body.validated_data)
+        hospital = HospitalSerializer(data={**body.validated_data,'owner':request.user.id})
         if not hospital.is_valid():
             return Response(status=400,data={'message':hospital.errors})
         hospital.save()
@@ -185,25 +191,34 @@ class HospitalCrudView(APIView,RecordExisitsMixin):
 
 
 
-class AssetCategoryCrudView(APIView):
+class AssetCategoryCrudView(APIView,RecordExtractor):
     authentication_classes = [BasicAuthentication]
     permission_classes = [PermissionHospitalV2]  
     
     def check_permission(self,request,handler):
         try:
             self.check_object_permissions(request,{})
+            return handler()
         except PermissionDenied:
             return Response({'message': 'Authentication error'})
 
     def get(self,request,id):
-
         def handler():
-            return Response({'message': 'succes'})
+            hosptial = self.get_or_throw(Hospital,id)
+            result = HospitalSerializer(hosptial).data
+            return Response(data={'message':result})
         return self.check_permission(request,handler)
         
 
     def post(self,request,id):
         def handler():
+            body = CreateAssetCategoryDto(data=request.data)
+            if not body.is_valid():
+                return Response(data={'message':body.errors})
+            result = AssetCategorySerializer(data={'name':body.validated_data['name'],'hospital':id})
+            if not result.is_valid():
+                return Response(data={'message':result.errors})
+            result.save()
             return Response({'message': 'succes'})
-        
+
         return self.check_permission(request,handler)
